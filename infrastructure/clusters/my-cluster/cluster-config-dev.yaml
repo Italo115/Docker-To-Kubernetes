@@ -1,0 +1,16 @@
+# Per-env substitution values used by Flux postBuild.substituteFrom on the
+# apps-dev Kustomization. One ConfigMap per env; the cluster runs all four.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-config-dev
+  namespace: flux-system
+data:
+  environment: dev
+  cluster_domain: kube.example.com
+  app_namespace: app-dev
+  pg_cluster: postgres
+  pg_namespace: postgresql
+  image_tag_suffix: dev
+  auto_image_updates: "true"
+  workload_pool: dev

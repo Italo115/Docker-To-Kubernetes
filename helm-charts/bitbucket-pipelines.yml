@@ -1,0 +1,66 @@
+image: alpine/helm:3.17.1
+
+# CI scenarios under platform/ci/ — each represents a realistic shape:
+#   test-values.yaml         minimal stateless app
+#   db-enabled-values.yaml   ingress + Postgres + cross-grants
+# Add a scenario whenever the chart grows a new top-level branch.
+
+definitions:
+  steps:
+    - step: &lint-and-template
+        name: Lint and template
+        size: 4x
+        runtime:
+          cloud:
+            atlassian-ip-ranges: true
+        script:
+          - helm lint platform
+          - helm template platform platform -f platform/ci/test-values.yaml       --debug > /dev/null
+          - helm template platform platform -f platform/ci/db-enabled-values.yaml --debug > /dev/null
+
+    - step: &package-and-push-chart
+        name: Package and push Helm chart
+        size: 4x
+        runtime:
+          cloud:
+            atlassian-ip-ranges: true
+        script:
+          - helm registry login ${HARBOR_HOST} --username ${HARBOR_USERNAME} --password ${HARBOR_PASSWORD}
+          - helm package platform
+          - helm push platform-*.tgz oci://${HARBOR_HOST}/example
+
+    - step: &build-and-push-error-pages
+        name: Build and push error-pages image
+        image: docker:27-cli
+        size: 4x
+        runtime:
+          cloud:
+            atlassian-ip-ranges: true
+        services:
+          - docker
+        script:
+          - VERSION=$(cat error-pages-image/VERSION | tr -d '[:space:]')
+          - echo "Building error-pages:${VERSION}"
+          - echo "${HARBOR_PASSWORD}" | docker login ${HARBOR_HOST} --username ${HARBOR_USERNAME} --password-stdin
+          # Force the classic builder: buildx's docker-container driver needs a
+          # --privileged BuildKit container, which Bitbucket Cloud runners deny.
+          - DOCKER_BUILDKIT=0 docker build -t ${HARBOR_HOST}/example/error-pages:${VERSION} -t ${HARBOR_HOST}/example/error-pages:latest error-pages-image
+          - docker push ${HARBOR_HOST}/example/error-pages:${VERSION}
+          - docker push ${HARBOR_HOST}/example/error-pages:latest
+
+pipelines:
+  branches:
+    main:
+      - step: *lint-and-template
+      - parallel:
+          - step: *package-and-push-chart
+          - step: *build-and-push-error-pages
+    chart/*:
+      - step: *lint-and-template
+      - step: *package-and-push-chart
+    image/*:
+      - step: *build-and-push-error-pages
+
+  pull-requests:
+    "**":
+      - step: *lint-and-template

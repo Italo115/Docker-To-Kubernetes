@@ -1,0 +1,10 @@
+{{- if and .Values.ingress .Values.ingress.enabled .Values.ingress.serversTransport -}}
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: {{ include "platform.fullname" . }}-transport
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+spec:
+  insecureSkipVerify: {{ .Values.ingress.serversTransportInsecureSkipVerify | default true }}
+{{- end }}

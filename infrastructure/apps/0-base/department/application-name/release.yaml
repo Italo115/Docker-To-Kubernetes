@@ -1,0 +1,28 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sample-app
+  namespace: flux-system
+spec:
+  targetNamespace: ${app_namespace}
+  interval: 5m
+  chart:
+    spec:
+      chart: platform
+      version: "0.5.x"
+      sourceRef:
+        kind: HelmRepository
+        name: example
+        namespace: flux-system
+      interval: 1m
+  install:
+    createNamespace: true
+    remediation: { retries: 3 }
+  upgrade:
+    remediation: { retries: 3 }
+  valuesFrom:
+    - kind: ConfigMap
+      name: sample-app-values
+    - kind: ConfigMap
+      name: sample-app-values-env
+      optional: true

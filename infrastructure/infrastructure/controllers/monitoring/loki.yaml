@@ -1,0 +1,117 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: loki
+  namespace: monitoring
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: loki
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      version: "6.33.0"
+  values:
+    deploymentMode: SingleBinary
+    test:
+      enabled: false
+    lokiCanary:
+      enabled: false
+    singleBinary:
+      replicas: 1
+      nodeSelector:
+        workload: infrastructure
+      podSecurityContext:
+        fsGroup: 10001
+        runAsUser: 10001
+        runAsGroup: 10001
+        runAsNonRoot: true
+      persistence:
+        enabled: true
+        accessModes:
+          - ReadWriteOnce
+        size: 150Gi
+        storageClassName: kubernetes
+    ruler:
+      enabled: false
+    loki:
+      memberlistConfig: {}
+      extraMemberlistConfig: {}
+      storage:
+        bucketNames: {}
+      auth_enabled: false
+
+      server:
+        http_listen_port: 3100
+
+      common:
+        replication_factor: 1
+        ring:
+          kvstore:
+            store: inmemory
+
+      storage_config:
+        filesystem:
+          directory: /var/loki/chunks
+
+      schemaConfig:
+        configs:
+          - from: "2024-04-01"
+            store: tsdb
+            object_store: filesystem
+            schema: v13
+            index:
+              prefix: loki_index_
+              period: 24h
+
+      ingester:
+        chunk_encoding: snappy
+        lifecycler:
+          ring:
+            kvstore:
+              store: inmemory
+            replication_factor: 1
+          final_sleep: 0s
+
+      limits_config:
+        reject_old_samples: true
+        reject_old_samples_max_age: 168h
+
+      querier:
+        max_concurrent: 4
+
+    chunksCache:
+      enabled: false
+    backend:
+      replicas: 0
+    read:
+      replicas: 0
+    write:
+      replicas: 0
+    minio:
+      enabled: false
+    # nginx gateway (Deployment) — pin to infra pool alongside the single binary.
+    gateway:
+      nodeSelector:
+        workload: infrastructure
+    ingester:
+      replicas: 0
+    querier:
+      replicas: 0
+    queryFrontend:
+      replicas: 0
+    queryScheduler:
+      replicas: 0
+    distributor:
+      replicas: 0
+    compactor:
+      replicas: 0
+    indexGateway:
+      replicas: 0
+    bloomCompactor:
+      replicas: 0
+    bloomGateway:
+      replicas: 0

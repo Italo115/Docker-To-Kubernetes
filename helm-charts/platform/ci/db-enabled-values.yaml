@@ -1,0 +1,23 @@
+# Full scenario: backend with ingress, Postgres DB, cross-grants. Catches typos
+# in the bootstrap Job, RBAC, Certificate, IngressRoute, and envStyle templates.
+component: ci-backend
+domain: it
+
+image:
+  repository: example/backend
+  tag: latest
+port: 8080
+
+ingress:
+  enabled: true
+  host: ci-backend.example.invalid
+
+database:
+  enabled: true
+  envStyle: postgres
+  owns:
+    name: ci_db
+    extensions: [pgcrypto]
+    schemas: [reporting]
+  reads:
+    - some_other_db

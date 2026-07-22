@@ -1,0 +1,31 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cloudnative-pg
+  namespace: flux-system
+spec:
+  targetNamespace: cnpg-system
+  interval: 30m
+  chart:
+    spec:
+      chart: cloudnative-pg
+      version: "0.26.x"
+      sourceRef:
+        kind: HelmRepository
+        name: cloudnative-pg
+        namespace: flux-system
+      interval: 12h
+  timeout: 15m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    # CNPG operator pod (NOT the postgres Cluster — that's pinned via pg-cluster.yaml).
+    nodeSelector:
+      workload: infrastructure

@@ -1,0 +1,44 @@
+component: sample-app
+domain: apps
+
+image:
+  repository: sample-app
+  tag: latest
+
+port: 8080
+replicas: 1
+
+resources:
+  requests: { cpu: 50m, memory: 64Mi }
+  limits: { cpu: 1000m, memory: 4Gi }
+
+ingress:
+  enabled: true
+  host: sample-app-${environment}.${cluster_domain}
+  scheme: https
+  serversTransport: insecure-https
+
+env:
+  - name: APP_ENV
+    value: ${environment}
+
+envFrom:
+  - secretRef:
+      name: otel-config
+  - secretRef:
+      name: sample-app-secret
+
+# Example: mount a secret as a read-only volume. Remove or adapt per app.
+volumes:
+  - name: app-keys
+    secret:
+      secretName: sample-app-secret
+      defaultMode: 0444
+      items:
+        - key: private-key
+          path: private-key
+
+volumeMounts:
+  - name: app-keys
+    mountPath: /app/keys/private
+    readOnly: true

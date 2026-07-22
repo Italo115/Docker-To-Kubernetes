@@ -1,0 +1,126 @@
+# platform app-template default values.
+#
+# This chart renders ONE application per HelmRelease. The consuming HelmRelease
+# in apps/base/<app>/ overrides the values it needs; most apps only have to set
+# component, domain, image, port, and (optionally) ingress/database.
+#
+# Every field below is documented inline so adding a new service is a single-file
+# operation.
+
+# ─── Global (shared by every app, set once per cluster via overlay) ───
+global:
+  # Container registry hostname.
+  registry: harbor.example.com
+  # Harbor project under the registry; usually one per environment.
+  imageProject: example
+  # ImagePullPolicy applied to the main container.
+  pullPolicy: IfNotPresent
+  # Image pull secrets attached to the pod.
+  imagePullSecrets:
+    - name: harbor-pull
+  # The CNPG Cluster resource name (deployed by infrastructure/configs/pg-cluster.yaml).
+  # The bootstrap Job reads ${pgCluster}-superuser to provision app roles.
+  pgCluster: postgres
+  # Namespace where the CNPG Cluster lives. The cluster's superuser Secret must be
+  # mirrored into the app's namespace via Reflector — see docs/04-secrets.md.
+  pgClusterNamespace: postgresql
+  # Image used by the database bootstrap Job. Must have psql + bash (no curl/API access needed).
+  dbBootstrapImage: ghcr.io/cloudnative-pg/postgresql:16
+
+# ─── Identity ───
+# component: REQUIRED. Stable name; used in resource names, labels, DB role.
+# domain:    REQUIRED. One of core, commercial, finance, operations, it, supplychain.
+# environment: optional; stamped onto labels. Usually set by the overlay.
+component: ""
+domain: ""
+environment: ""
+
+# ─── Workload ───
+image:
+  repository: ""         # e.g. sample-api
+  tag: latest            # overlays bump this; image-automation may rewrite on dev
+port: 8080
+replicas: 1
+
+resources:
+  requests: { cpu: 100m, memory: 256Mi }
+  limits:   { cpu: 500m, memory: 512Mi }
+
+# Pass-through container fields. Empty by default.
+command: []
+args: []
+env: []
+envFrom: []
+volumes: []
+volumeMounts: []
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# ─── Pod spreading ───
+# Spread pods evenly across nodes (kubernetes.io/hostname). Soft constraint
+# (ScheduleAnyway) — balances all chart-managed pods of the same domain across
+# the pool's nodes, but never blocks scheduling. Selects on managed-by + domain
+# so single-replica apps still balance against each other. Master/control-plane
+# nodes are excluded automatically: they carry a NoSchedule taint and lack the
+# workload label, and the chart adds no toleration for them.
+spreadAcrossNodes: true
+# Explicit override: a non-empty list replaces the default above entirely.
+topologySpreadConstraints: []
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+serviceAccountName: ""
+
+probes:
+  startup: {}
+  liveness: {}
+  readiness: {}
+
+deployment:
+  annotations: {}
+  strategy:
+    type: RollingUpdate
+
+service:
+  type: ClusterIP
+
+# ─── Ingress (Traefik + cert-manager) ───
+ingress:
+  enabled: false
+  # host: sample-api.dev.kube.example.com   # required when enabled
+  extraHosts: []                                # extra Host() names this instance also answers, added to the cert SANs.
+                                                 # Set in the owning env's values-patch to point other envs' DNS here.
+  # pathPrefix: /api                            # optional
+  clusterIssuer: letsencrypt-prod
+  entryPoints: [websecure]
+  middlewares: []
+  # scheme: https                                # uncomment if pod speaks HTTPS upstream
+  # serversTransport: insecure-https             # truthy = pod speaks self-signed HTTPS upstream.
+                                                 # Chart renders a per-app ServersTransport named "<fullname>-transport".
+  serversTransportInsecureSkipVerify: true       # set false if backend cert is trusted
+
+# ─── Database (CNPG-backed Postgres, auto-provisioned) ───
+# When enabled, the chart emits a pre-install/pre-upgrade Job that:
+#   1. Ensures a role "<component>-app" exists with a generated password
+#   2. Ensures the owned database exists
+#   3. Creates the requested extensions/schemas
+#   4. Grants read access on each database in `reads`
+#   5. Writes a Secret named "<pgCluster>-<component>-app" with username, password,
+#      host, port, dbname, uri, jdbc-uri keys, which the Deployment envFroms.
+#
+# envStyle controls which auxiliary env vars the chart injects from the creds Secret:
+#   none     — only the default envFrom (username, password, host, port, dbname, uri, jdbc-uri keys exposed as-is)
+#   spring   — also SPRING_DATASOURCE_USERNAME / _PASSWORD / _URL (from jdbc-uri)
+#   postgres — also POSTGRES_USER / _PASSWORD / _HOST / _PORT / _DB
+database:
+  enabled: false
+  envStyle: none
+  owns:
+    name: ""              # e.g. sample_workcenter
+    extensions: []        # e.g. [pgcrypto, uuid-ossp]
+    schemas: []           # e.g. [audit, reporting]
+    encoding: UTF8
+    locale: ""
+    reclaimPolicy: retain
+  reads: []               # e.g. [sample_core, sample_finance] — read-only access onto other apps' DBs

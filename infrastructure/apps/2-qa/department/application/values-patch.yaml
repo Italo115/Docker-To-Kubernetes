@@ -1,0 +1,4 @@
+image:
+  tag: "8612-qa" # {"$imagepolicy": "flux-system:sample-app-qa:tag"}
+nodeSelector:
+  workload: qa

@@ -1,0 +1,17 @@
+# Exposes the CNPG primary over raw TCP on Traefik's `postgres` entryPoint (:5432,
+# VIP 172.16.56.126). HostSNI(`*`) = catch-all: single backend, no SNI routing.
+# TCP passthrough (no TLS block) so Postgres StartTLS negotiates end-to-end.
+# Reaches the whole Postgres instance (every env's DB); access gated at the firewall.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: postgres-rw
+  namespace: postgresql
+spec:
+  entryPoints:
+    - postgres
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: postgres-rw
+          port: 5432

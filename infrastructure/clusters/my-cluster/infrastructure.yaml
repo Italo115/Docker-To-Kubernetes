@@ -1,0 +1,20 @@
+# Cluster-wide operators. Single reconcile; substitution uses cluster-config-dev
+# as the source of values for controller manifests (only ${workload_pool} matters
+# here, and infrastructure controllers always pin to workload_pool=infrastructure
+# via their own values — the substitution is kept for parity with apps).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infrastructure
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: secrets-infrastructure
+  interval: 10m
+  path: ./infrastructure/controllers
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  wait: true
+  timeout: 10m

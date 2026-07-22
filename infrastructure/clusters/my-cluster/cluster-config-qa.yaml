@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-config-qa
+  namespace: flux-system
+data:
+  environment: qa
+  cluster_domain: kube.example.com
+  app_namespace: app-qa
+  pg_cluster: postgres
+  pg_namespace: postgresql
+  image_tag_suffix: qa
+  auto_image_updates: "true"
+  workload_pool: dev

@@ -1,0 +1,92 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: opentelemetry-collector
+  namespace: flux-system
+spec:
+  targetNamespace: monitoring
+  interval: 30m
+  dependsOn:
+    - name: kube-prometheus-stack
+  chart:
+    spec:
+      chart: opentelemetry-collector
+      version: "0.x"
+      sourceRef:
+        kind: HelmRepository
+        name: opentelemetry
+        namespace: flux-system
+      interval: 12h
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    mode: deployment
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    ports:
+      otlp:
+        enabled: true
+        containerPort: 4317
+        servicePort: 4317
+        protocol: TCP
+      otlp-http:
+        enabled: true
+        containerPort: 4318
+        servicePort: 4318
+        protocol: TCP
+      prometheus:
+        enabled: true
+        containerPort: 8889
+        servicePort: 8889
+        protocol: TCP
+    config:
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+              endpoint: 0.0.0.0:4317
+            http:
+              endpoint: 0.0.0.0:4318
+      processors:
+        batch:
+          send_batch_size: 1024
+          timeout: 5s
+        memory_limiter:
+          check_interval: 5s
+          limit_mib: 409
+          spike_limit_mib: 128
+      exporters:
+        otlphttp/tempo:
+          endpoint: http://tempo.monitoring.svc.cluster.local:4318
+        otlphttp/loki:
+          endpoint: http://loki.monitoring.svc.cluster.local:3100/otlp
+        prometheus:
+          endpoint: 0.0.0.0:8889
+          resource_to_telemetry_conversion:
+            enabled: true
+      service:
+        pipelines:
+          traces:
+            receivers: [ otlp ]
+            processors: [ memory_limiter, batch ]
+            exporters: [ otlphttp/tempo ]
+          metrics:
+            receivers: [ otlp ]
+            processors: [ memory_limiter, batch ]
+            exporters: [ prometheus ]
+          logs:
+            receivers: [ otlp ]
+            processors: [ memory_limiter, batch ]
+            exporters: [ otlphttp/loki ]

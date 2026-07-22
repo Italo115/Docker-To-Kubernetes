@@ -1,0 +1,21 @@
+# Global default on the websecure entrypoint (see traefik/release.yaml). Applies
+# to EVERY route — Harbor, registries, OIDC and APIs included — so it MUST only
+# intercept 5xx. Do NOT add 401/404 here: the Docker registry v2 login flow
+# relies on a 401 + WWW-Authenticate challenge, and `docker pull` relies on clean
+# 404s for absent manifests/blobs. Intercepting those replaces the response and
+# breaks CLI/registry auth (the browser UI is unaffected, which masks it).
+# Custom 401/404 pages must be applied per-route to browser apps only.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: error-pages
+  namespace: traefik
+spec:
+  errors:
+    status:
+      - "500-599"
+    service:
+      name: error-pages
+      namespace: traefik
+      port: 80
+    query: "/{status}"

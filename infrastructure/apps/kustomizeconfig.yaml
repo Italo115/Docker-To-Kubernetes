@@ -1,0 +1,9 @@
+nameReference:
+  - kind: ConfigMap
+    fieldSpecs:
+      - kind: HelmRelease
+        path: spec/valuesFrom/name
+  - kind: ImageRepository
+    fieldSpecs:
+      - kind: ImagePolicy
+        path: spec/imageRepositoryRef/name

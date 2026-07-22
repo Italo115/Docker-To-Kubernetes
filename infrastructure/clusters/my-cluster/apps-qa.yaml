@@ -1,0 +1,21 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: apps-qa
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: infrastructure-configs
+    - name: secrets-qa
+  interval: 5m
+  path: ./apps/2-qa
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  wait: true
+  timeout: 5m
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-config-qa

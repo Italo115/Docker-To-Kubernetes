@@ -1,0 +1,67 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: traefik
+  namespace: flux-system
+spec:
+  targetNamespace: traefik
+  interval: 30m
+  dependsOn:
+    - name: cert-manager
+  chart:
+    spec:
+      chart: traefik
+      version: "38.x"
+      sourceRef:
+        kind: HelmRepository
+        name: traefik
+        namespace: flux-system
+      interval: 12h
+  timeout: 15m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    priorityClassName: infrastructure-critical
+    crds:
+      enabled: true
+    gatewayAPI:
+      enabled: false
+    additionalArguments:
+      - "--entrypoints.websecure.http.middlewares=traefik-error-pages@kubernetescrd"
+    service:
+      type: LoadBalancer
+      spec:
+        allocateLoadBalancerNodePorts: true
+    ports:
+      web:
+        redirections:
+          entryPoint:
+            to: websecure
+            scheme: https
+            permanent: true
+      # Raw-TCP entryPoint for Postgres (CNPG). Adds a :5432 listener on the same
+      # Octavia LB (VIP 172.16.56.126); routed by IngressRouteTCP → postgres-rw.
+      # Access gated at the network firewall, not here.
+      postgres:
+        port: 5432
+        expose:
+          default: true
+        protocol: TCP
+    providers:
+      kubernetesCRD:
+        allowCrossNamespace: true
+      kubernetesIngress:
+        publishedService:
+          enabled: true
+    ingressRoute:
+      dashboard:
+        enabled: false
+    nodeSelector:
+      workload: infrastructure

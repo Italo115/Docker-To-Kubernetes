@@ -1,0 +1,417 @@
+/**
+ * Example Platform Design System
+ * CSS Custom Properties: Colors, Typography, Spacing, Shadows, Radius
+ */
+
+/* ─────────────────────────────────────────
+   GOTHAM — Brand font (licensed files)
+   ───────────────────────────────────────── */
+/* NOTE: Gotham is licensed. We substitute Montserrat from Google Fonts as the
+   nearest open-source match for previews. Drop real Gotham OTF/TTF files into
+   /fonts/ and the @font-face will pick them up. */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap');
+
+@font-face {
+  font-family: 'Gotham';
+  src: local('Gotham Thin'), url('fonts/GOTHAMTHIN.OTF') format('opentype'),
+       local('Montserrat'), url('https://fonts.gstatic.com/s/montserrat/v26/JTUSjIg1_i6t8kCHKm45_QpRyS7m.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: url('fonts/GOTHAMTHINITALIC.OTF') format('opentype');
+  font-weight: 100;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: url('fonts/GOTHAMLIGHT.TTF') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: url('fonts/GOTHAMLIGHTITALIC.TTF') format('truetype');
+  font-weight: 300;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: url('fonts/GOTHAMBOOK.TTF') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: url('fonts/GOTHAMBOOKITALIC.TTF') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: url('fonts/GOTHAMMEDIUM.TTF') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: url('fonts/GOTHAMBOLD.TTF') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: url('fonts/GOTHAMBOLDITALIC.TTF') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: url('fonts/GOTHAMBLACK.OTF') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: url('fonts/GOTHAMULTRAITALIC.OTF') format('opentype');
+  font-weight: 900;
+  font-style: italic;
+}
+
+/* ─────────────────────────────────────────
+   INTER — UI font (Google Fonts)
+   ───────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/primeicons@7/primeicons.css');
+
+:root {
+
+  /* ─────────────────────────────────────────
+     COLOR TOKENS — BRAND PRIMARY
+     ───────────────────────────────────────── */
+  --color-primary-navy:       #003366;  /* Brand primary, dominant UI color */
+  --color-primary-dark:       #1a4775;  /* Darker navy — button bg, active states */
+  --color-primary-light:      #219bb3;  /* Lighter navy accent */
+
+  /* PRIMARY GRAYS (per brand guide — Colour Hierarchy) */
+  --color-cool-gray-8:        #666666;  /* Primary gray */
+  --color-metallic-877:       #999999;  /* Alt primary gray */
+
+  /* ─────────────────────────────────────────
+     COLOR TOKENS — SECONDARY
+     ───────────────────────────────────────── */
+  --color-cool-gray:          #666666;  /* Gray */
+  --color-cool-gray-shade:    #4d4d4d;
+  --color-cool-gray-tint:     #8a8a8a;
+  --color-cool-gray-2:        #cccccc;  /* Secondary gray */
+  --color-metallic:           #999999;  /* Gray */
+  --color-metallic-shade:     #7a7a7a;
+  --color-metallic-tint:      #b8b8b8;
+  --color-process-black:      #000000;  /* Black */
+  --color-process-black-tint: #1a1a1a;
+  --color-spot-white:         #ffffff;  /* White */
+
+  /* ─────────────────────────────────────────
+     COLOR TOKENS — TERTIARY / ACCENT
+     ───────────────────────────────────────── */
+  --color-orange:             #f6921e;  /* Accent colour */
+  --color-orange-shade:       #d8801a;
+  --color-orange-tint:        #f79d35;
+  --color-orange-bg:          #ffe6c9;  /* Orange soft background */
+  --color-accent-blue:        #7987ff;
+  --color-accent-purple:      #e697ff;
+  --color-accent-pink:        #ffa5cb;
+  --color-teal:               #21908c;
+  --color-teal-mid:           #46b1ac;
+  --color-teal-light:         #80c5c3;
+  --color-link-blue:          #236be2;
+  --color-highlight-blue:     #354e96;
+
+  /* ─────────────────────────────────────────
+     COLOR TOKENS — SEMANTIC / STATUS
+     ───────────────────────────────────────── */
+  /* Success — rgb(2,188,125) */
+  --color-success:            #02BC7D;
+  --color-success-bg:         #E5F8F0;
+  --color-success-fg:         #017A51;
+  /* Danger — rgb(244,67,54) */
+  --color-danger:             #F44336;
+  --color-danger-bg:          #FDECEA;
+  --color-danger-fg:          #B3261E;
+  --color-error:              #F44336;   /* legacy alias */
+  /* Info — rgb(66,133,220) */
+  --color-info:               #4285DC;
+  --color-info-bg:            #E8F1FB;
+  --color-info-fg:            #2C5EA0;
+  /* Warning — rgb(235,108,82) */
+  --color-warning:            #EB6C52;
+  --color-warning-bg:         #FDEAE5;
+  --color-warning-fg:         #B34A34;
+
+  /* ─────────────────────────────────────────
+     COLOR TOKENS — TEXT
+     ───────────────────────────────────────── */
+  --color-text-primary:       #000000;
+  --color-text-secondary:     #6b7280;  /* gray-500 */
+  --color-text-tertiary:      #64748b;  /* slate-500 */
+  --color-text-muted:         #58667a;
+  --color-text-inverse:       #ffffff;
+  --color-text-highlight:     #354e96;
+  --color-text-navy:          #003366;
+  --color-text-orange:        #f6921e;
+
+  /* ─────────────────────────────────────────
+     COLOR TOKENS — SURFACES
+     ───────────────────────────────────────── */
+  --color-bg-page:            #f5f5f5;  /* App/page background */
+  --color-bg-card:            #ffffff;  /* Cards, panels, sidebar */
+  --color-bg-surface:         #f8fafc;  /* Subtle surface */
+  --color-bg-hover:           #f1f5f9;  /* Hover state */
+  --color-bg-active:          #dbe9f8;  /* Active/selected */
+  --color-bg-navy:            #003366;  /* Navy fill backgrounds */
+
+  /* ─────────────────────────────────────────
+     COLOR TOKENS — BORDERS
+     ───────────────────────────────────────── */
+  --color-border:             #e2e8f0;  /* Primary border */
+  --color-border-subtle:      #eeeeee;
+  --color-border-strong:      #e8e8e8;
+  --color-border-navy:        #003366;
+
+  /* ─────────────────────────────────────────
+     TYPOGRAPHY — FONT FAMILIES
+     ───────────────────────────────────────── */
+  --font-display:   'Gotham', 'Montserrat', sans-serif;   /* Brand display — falls back to Montserrat (Google Fonts) when Gotham OTFs aren't loaded */
+  --font-ui:        'Inter', sans-serif;    /* Primary UI font */
+  --font-mono:      'B612 Mono', 'Courier New', monospace;
+
+  /* ─────────────────────────────────────────
+     TYPOGRAPHY — WEIGHTS
+     ───────────────────────────────────────── */
+  --fw-light:       300;
+  --fw-book:        400;   /* Gotham Book = 400 */
+  --fw-medium:      500;   /* Gotham Medium = 500 */
+  --fw-semibold:    600;
+  --fw-bold:        700;
+  --fw-extrabold:   800;
+
+  /* ─────────────────────────────────────────
+     TYPOGRAPHY — SIZE SCALE (Gotham/display)
+     Based on Figma type classes
+     ───────────────────────────────────────── */
+  --text-xs:        10px;
+  --text-s:         12px;
+  --text-m:         14px;
+  --text-l:         16px;
+  --text-xl:        20px;
+  --text-1xl:       24px;
+  --text-2xl:       32px;
+  --text-3xl:       40px;
+
+  /* ─────────────────────────────────────────
+     TYPOGRAPHY — LINE HEIGHTS
+     ───────────────────────────────────────── */
+  --lh-tight:       1.25rem;
+  --lh-snug:        1.5rem;
+  --lh-normal:      1.75rem;
+  --lh-relaxed:     2rem;
+  --lh-loose:       2.5rem;
+
+  /* Inter UI sizes */
+  --text-ui-xs:     9px;
+  --text-ui-sm:     12px;
+  --text-ui-base:   14px;
+  --text-ui-md:     16px;
+  --text-ui-lg:     18px;
+  --text-ui-xl:     20px;
+
+  /* ─────────────────────────────────────────
+     SPACING
+     ───────────────────────────────────────── */
+  --space-1:        4px;
+  --space-2:        8px;
+  --space-3:        12px;
+  --space-4:        16px;
+  --space-5:        20px;
+  --space-6:        24px;
+  --space-7:        28px;
+  --space-8:        32px;
+  --space-10:       40px;
+  --space-12:       48px;
+  --space-16:       64px;
+  --space-18:       72px;
+
+  /* ─────────────────────────────────────────
+     BORDER RADIUS
+     ───────────────────────────────────────── */
+  --radius-sm:      4px;    /* Inputs, small buttons */
+  --radius-md:      8px;    /* Tags, badges */
+  --radius-lg:      12px;   /* Some panels */
+  --radius-xl:      16px;   /* Cards, sidebar, modals */
+  --radius-2xl:     24px;   /* Pill buttons, avatar circles */
+  --radius-full:    9999px; /* Full pill */
+
+  /* PrimeNG radius tokens */
+  --p-radius-1:     4px;
+  --p-radius-2:     8px;
+  --p-radius-3:     12px;
+  --p-radius-4:     16px;
+
+  /* ─────────────────────────────────────────
+     SHADOWS
+     ───────────────────────────────────────── */
+  --shadow-card:    0px 0px 40px 0px rgba(0, 51, 102, 0.04);  /* Cards — navy tinted */
+  --shadow-sidebar: 0px 4px 40px 0px rgba(0, 0, 0, 0.02);     /* Sidebar panel */
+  --shadow-topbar:  0px 0px 40px 0px rgba(30, 30, 30, 0.02);  /* Top bar */
+  --shadow-raised:  0px 0px 40px 0px rgba(0, 0, 0, 0.10);     /* Elevated elements */
+  --shadow-sm:      0px 0px 10px 0px rgba(0, 0, 0, 0.04);
+  --shadow-md:      0px 2px 20px 0px rgba(0, 0, 0, 0.06);
+
+  /* PrimeNG shadow tokens */
+  --p-shadow-1:     var(--shadow-topbar);
+  --p-shadow-2:     var(--shadow-card);
+  --p-shadow-3:     var(--shadow-sidebar);
+  --p-shadow-4:     var(--shadow-md);
+  --p-shadow-5:     var(--shadow-raised);
+
+  /* ─────────────────────────────────────────
+     COMPONENT SIZES
+     ───────────────────────────────────────── */
+  --sidebar-width:        247px;
+  --sidebar-collapsed:    64px;
+  --topbar-height:        80px;
+  --menu-item-height:     80px;
+  --button-height-sm:     34px;
+  --button-height-md:     40px;
+  --button-height-lg:     48px;
+  --input-height:         40px;
+  --card-padding:         16px;
+
+}
+
+/* ─────────────────────────────────────────
+   SEMANTIC TYPE STYLES
+   ───────────────────────────────────────── */
+
+/* Display headings (Gotham/Montserrat) */
+h1, .h1 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--text-3xl);
+  line-height: var(--lh-loose);
+  color: var(--color-text-primary);
+  text-wrap: pretty;
+}
+h2, .h2 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--text-2xl);
+  line-height: var(--lh-relaxed);
+  color: var(--color-text-primary);
+}
+h3, .h3 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: var(--text-1xl);
+  line-height: 28px;
+  color: var(--color-primary-dark);
+}
+h4, .h4 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: var(--text-xl);
+  line-height: var(--lh-relaxed);
+  color: var(--color-primary-dark);
+}
+h5, .h5 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: var(--text-l);
+  line-height: 20px;
+  color: var(--color-text-primary);
+}
+h6, .h6 {
+  font-family: var(--font-display);
+  font-size: var(--text-l);
+  line-height: 20px;
+  color: var(--color-text-secondary);
+}
+
+/* Body / UI text (Inter) */
+p, .p {
+  font-family: var(--font-ui);
+  font-weight: var(--fw-book);
+  font-size: var(--text-ui-base);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+.text-small {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-sm);
+  color: var(--color-text-secondary);
+}
+.text-label {
+  font-family: var(--font-ui);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-ui-base);
+  color: var(--color-text-primary);
+}
+.text-caption {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-xs);
+  color: var(--color-text-tertiary);
+}
+code, .code {
+  font-family: var(--font-mono);
+  font-size: var(--text-ui-sm);
+  color: var(--color-text-primary);
+  background: var(--color-bg-hover);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+/* Card heading styles */
+.card-heading {
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: var(--text-1xl);
+  line-height: 28px;
+  color: var(--color-primary-dark);
+}
+.card-subheading {
+  font-family: var(--font-display);
+  font-size: var(--text-l);
+  line-height: 20px;
+  color: #787878;
+}
+
+/* Navigation label */
+.nav-label {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-base);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-navy);
+}
+
+/* Data/metric display */
+.data-value {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--text-xl);
+  line-height: 24px;
+  color: var(--color-link-blue);
+}
+
+/* Table text */
+.table-text {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-base);
+  color: var(--color-text-secondary);
+}
+.table-header {
+  font-family: var(--font-ui);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-ui-base);
+  color: var(--color-text-primary);
+}

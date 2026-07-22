@@ -1,0 +1,107 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: flux-system
+spec:
+  targetNamespace: monitoring
+  interval: 30m
+  dependsOn:
+    - name: traefik
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: "87.x"
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+      interval: 12h
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    grafana:
+      nodeSelector:
+        workload: infrastructure
+      # k8s-sidecar >=2.x (bundled from chart 87) uses a newer OpenSSL that rejects
+      # the Magnum-generated API-server CA: "certificate verify failed: Missing
+      # Authority Key Identifier". The sidecars (dashboard+datasource) crashloop
+      # otherwise. Skip verify on the in-cluster API call (still authz'd by SA token).
+      sidecar:
+        skipTlsVerify: true
+      # Persist grafana.db + installed plugins across restarts. Without this the DB
+      # lives on emptyDir, so the admin server-admin flag, password changes, manual
+      # dashboards and UI-installed plugins are wiped every pod restart. 2Gi: db is
+      # ~3MB, plugins <500MB; kept small because the Cinder "Kubernetes" volume-type
+      # quota is near full (596/600).
+      persistence:
+        enabled: true
+        type: pvc
+        storageClassName: kubernetes
+        accessModes:
+          - ReadWriteOnce
+        size: 10Gi
+      # Allow the plugin catalog install action in the UI (needs Grafana Server Admin,
+      # which the chart's built-in admin user is).
+      grafana.ini:
+        plugins:
+          plugin_admin_enabled: true
+      ingress:
+        enabled: true
+        ingressClassName: traefik-traefik
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          - grafana.example.com
+        tls:
+          - secretName: grafana-tls
+            hosts:
+              - grafana.example.com
+      additionalDataSources:
+        - name: Loki
+          type: loki
+          uid: loki
+          access: proxy
+          url: http://loki.monitoring.svc.cluster.local:3100
+          isDefault: false
+        - name: Tempo
+          type: tempo
+          uid: tempo
+          access: proxy
+          url: http://tempo.monitoring.svc.cluster.local:3200
+          isDefault: false
+          jsonData:
+            tracesToLogsV2:
+              datasourceUid: loki
+              filterByTraceID: true
+              filterBySpanID: true
+            nodeGraph:
+              enabled: true
+    # Pin the long-running components (Deployments/StatefulSets) to the infra pool.
+    # prometheus-node-exporter is a DaemonSet (per-node metrics) and is deliberately
+    # left cluster-wide — pinning it would drop node metrics from every other node.
+    prometheus:
+      prometheusSpec:
+        nodeSelector:
+          workload: infrastructure
+    alertmanager:
+      alertmanagerSpec:
+        nodeSelector:
+          workload: infrastructure
+    prometheusOperator:
+      nodeSelector:
+        workload: infrastructure
+      admissionWebhooks:
+        patch:
+          nodeSelector:
+            workload: infrastructure
+    kube-state-metrics:
+      nodeSelector:
+        workload: infrastructure

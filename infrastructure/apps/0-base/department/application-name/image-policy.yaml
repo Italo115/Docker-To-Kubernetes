@@ -1,0 +1,25 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: sample-app
+  namespace: flux-system
+spec:
+  image: harbor.example.com/example/sample-app
+  interval: 1m
+  secretRef:
+    name: harbor-pull
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: sample-app
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: sample-app
+  filterTags:
+    pattern: "^(?P<num>[0-9]+)-${image_tag_suffix}$"
+    extract: "$num"
+  policy:
+    numerical:
+      order: asc

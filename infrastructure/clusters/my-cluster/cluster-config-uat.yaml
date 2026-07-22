@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-config-uat
+  namespace: flux-system
+data:
+  environment: uat
+  cluster_domain: kube.example.com
+  app_namespace: app-uat
+  pg_cluster: postgres
+  pg_namespace: postgresql
+  image_tag_suffix: uat
+  auto_image_updates: "true"
+  workload_pool: uat

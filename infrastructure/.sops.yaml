@@ -1,0 +1,13 @@
+# SOPS creation rules. `sops <file>` and `sops -e -i <file>` auto-pick the
+# matching rule. Keep the encrypted_regex tight so labels/metadata stay plaintext
+# and diffs remain reviewable.
+#
+# Private key fingerprint: <YOUR_GPG_FINGERPRINT>
+# In-cluster: installed as Secret `sops-gpg` in namespace `flux-system`.
+creation_rules:
+  - path_regex: secrets[/\\].*\.yaml$
+    encrypted_regex: ^(data|stringData|password|token|apiKey|secret|api-key|secretKey|accessKey)$
+    pgp: <YOUR_GPG_FINGERPRINT>
+  - path_regex: secrets/.*\.yaml$
+    encrypted_regex: ^(data|stringData|password|token|apiKey|secret|api-key|secretKey|accessKey)$
+    pgp: <YOUR_GPG_FINGERPRINT>

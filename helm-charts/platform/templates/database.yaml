@@ -1,0 +1,155 @@
+{{- if and .Values.database .Values.database.enabled -}}
+{{- $owns := required "database.owns is required when database.enabled" .Values.database.owns -}}
+{{- $dbName := required "database.owns.name is required" $owns.name -}}
+{{- $role := include "platform.dbOwnerRole" . -}}
+{{- $pgCluster := required "global.pgCluster is required when database.enabled" .Values.global.pgCluster -}}
+{{- $superuserSecret := printf "%s-superuser" $pgCluster -}}
+{{- $credsSecret := include "platform.dbOwnerSecret" . -}}
+{{- $pgNamespace := .Values.global.pgClusterNamespace | default "postgresql" -}}
+{{- $pgPort := .Values.global.pgPort | default "5432" | toString -}}
+{{- /* CNPG service is only resolvable via FQDN from app namespaces. */ -}}
+{{- $pgHost := printf "%s-rw.%s.svc" $pgCluster $pgNamespace -}}
+{{- /* Optional: supply the role password from an existing Secret instead of the chart
+       generating + owning one. Needed when a role is shared across environments (single
+       CNPG cluster) so every env sets the SAME password. When set, the chart does NOT
+       render its own creds Secret — the app provides DB_* from that Secret directly. */ -}}
+{{- $pwSecret := $owns.passwordSecret | default "" -}}
+{{- $pwKey := $owns.passwordKey | default "DB_PASSWORD" -}}
+{{- $pw := "" -}}
+{{- if not $pwSecret -}}
+{{- /* Reuse the existing role password if the creds Secret already exists, else mint one.
+       lookup runs against the live cluster during install/upgrade, so the password is
+       stable across reconciles (empty only on first install). */ -}}
+{{- $existing := (lookup "v1" "Secret" .Release.Namespace $credsSecret) -}}
+{{- if and $existing $existing.data (hasKey $existing.data "password") -}}
+{{-   $pw = index $existing.data "password" | b64dec -}}
+{{- else -}}
+{{-   $pw = randAlphaNum 32 -}}
+{{- end -}}
+{{- $jdbcUri := printf "jdbc:postgresql://%s:%s/%s" $pgHost $pgPort $dbName -}}
+{{- $uri := printf "postgresql://%s:%s@%s:%s/%s" $role $pw $pgHost $pgPort $dbName -}}
+---
+# DB creds the app reads via envFrom. Password persists via lookup (see above);
+# kept across uninstalls so we don't orphan the underlying role.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $credsSecret }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+type: Opaque
+data:
+  username: {{ $role | b64enc | quote }}
+  password: {{ $pw | b64enc | quote }}
+  host: {{ $pgHost | b64enc | quote }}
+  port: {{ $pgPort | b64enc | quote }}
+  dbname: {{ $dbName | b64enc | quote }}
+  uri: {{ $uri | b64enc | quote }}
+  jdbc-uri: {{ $jdbcUri | b64enc | quote }}
+{{- end }}
+---
+# Idempotent bootstrap: creates role + database + extensions + schemas + cross-grants.
+# Re-runs on every chart upgrade (helm pre-* hook). Uses psql only — no k8s API access,
+# so no ServiceAccount/RBAC and no curl dependency. The role password comes from the
+# same lookup-derived value baked into the creds Secret above, keeping them in sync.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "platform.fullname" . }}-db-bootstrap
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        {{- include "platform.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: bootstrap
+          image: {{ .Values.global.dbBootstrapImage | default "ghcr.io/cloudnative-pg/postgresql:16" }}
+          env:
+            - { name: PGHOST,     value: {{ $pgHost | quote }} }
+            - { name: PGPORT,     value: {{ $pgPort | quote }} }
+            - { name: PGUSER,     valueFrom: { secretKeyRef: { name: {{ $superuserSecret }}, key: username } } }
+            - { name: PGPASSWORD, valueFrom: { secretKeyRef: { name: {{ $superuserSecret }}, key: password } } }
+            - { name: DB_NAME,    value: {{ $dbName | quote }} }
+            - { name: DB_ROLE,    value: {{ $role | quote }} }
+            {{- if $pwSecret }}
+            - { name: ROLE_PASSWORD, valueFrom: { secretKeyRef: { name: {{ $pwSecret | quote }}, key: {{ $pwKey | quote }} } } }
+            {{- else }}
+            - { name: ROLE_PASSWORD, value: {{ $pw | quote }} }
+            {{- end }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              # Heredoc-free on purpose: YAML block scalars indent with spaces, and
+              # `<<-` only strips tabs, so heredoc terminators / $$ dollar-quoting break.
+              # One `psql -c` per statement; :'pw' is a safely-quoted psql literal.
+
+              # --- 1. Ensure role exists with the password from the creds Secret ---
+              # ROLE_PASSWORD is randAlphaNum (no quotes/backslashes) so it is safe to
+              # inline as a SQL string literal — avoids psql :'var' interpolation, which
+              # is not applied to -c command strings.
+              if psql -v ON_ERROR_STOP=1 -d postgres -c "CREATE ROLE \"${DB_ROLE}\" LOGIN PASSWORD '${ROLE_PASSWORD}'" 2>/dev/null; then
+                echo ">> created role ${DB_ROLE}"
+              else
+                psql -v ON_ERROR_STOP=1 -d postgres -c "ALTER ROLE \"${DB_ROLE}\" WITH LOGIN PASSWORD '${ROLE_PASSWORD}'"
+                echo ">> role ${DB_ROLE} already existed; password re-asserted"
+              fi
+
+              # --- 2. Ensure the database exists owned by the role ---
+              EXISTS=$(psql -tAc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME}'" -d postgres || true)
+              if [ "${EXISTS}" != "1" ]; then
+                psql -v ON_ERROR_STOP=1 -d postgres -c "CREATE DATABASE \"${DB_NAME}\" OWNER \"${DB_ROLE}\""
+                echo ">> created database ${DB_NAME}"
+              else
+                psql -v ON_ERROR_STOP=1 -d postgres -c "ALTER DATABASE \"${DB_NAME}\" OWNER TO \"${DB_ROLE}\""
+                echo ">> database ${DB_NAME} already exists; re-asserted ownership"
+              fi
+
+              # --- 3. Extensions and schemas ---
+              {{- range $owns.extensions }}
+              psql -v ON_ERROR_STOP=1 -d "${DB_NAME}" -c "CREATE EXTENSION IF NOT EXISTS \"{{ . }}\""
+              {{- end }}
+              {{- range $owns.schemas }}
+              psql -v ON_ERROR_STOP=1 -d "${DB_NAME}" -c "CREATE SCHEMA IF NOT EXISTS \"{{ . }}\" AUTHORIZATION \"${DB_ROLE}\""
+              {{- end }}
+
+              # --- 4. Cross-grants ---
+              {{- range .Values.database.reads }}
+              echo ">> granting read on {{ . }} to ${DB_ROLE}"
+              psql -v ON_ERROR_STOP=1 -d "{{ . }}" -c "GRANT CONNECT ON DATABASE \"{{ . }}\" TO \"${DB_ROLE}\""
+              psql -v ON_ERROR_STOP=1 -d "{{ . }}" -c "GRANT USAGE ON SCHEMA public TO \"${DB_ROLE}\""
+              psql -v ON_ERROR_STOP=1 -d "{{ . }}" -c "GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"${DB_ROLE}\""
+              psql -v ON_ERROR_STOP=1 -d "{{ . }}" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO \"${DB_ROLE}\""
+              {{- end }}
+
+              echo ">> bootstrap complete for ${DB_NAME} (owner ${DB_ROLE})"
+{{- end }}

@@ -1,0 +1,99 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: harbor
+  namespace: flux-system
+spec:
+  targetNamespace: artifactory
+  interval: 30m
+  dependsOn:
+    - name: traefik
+    - name: cert-manager
+  chart:
+    spec:
+      chart: harbor
+      version: "1.x"
+      sourceRef:
+        kind: HelmRepository
+        name: harbor
+        namespace: flux-system
+      interval: 12h
+  timeout: 20m
+  install:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    expose:
+      type: ingress
+      tls:
+        enabled: true
+        certSource: secret
+        secret:
+          secretName: harbor-tls
+      ingress:
+        className: traefik-traefik
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          core: harbor.example.com
+    externalURL: https://harbor.example.com
+    persistence:
+      enabled: true
+      persistentVolumeClaim:
+        registry:
+          size: 200Gi
+        jobservice:
+          size: 5Gi
+        database:
+          size: 20Gi
+        redis:
+          size: 5Gi
+        trivy:
+          size: 15Gi
+    database:
+      type: internal
+      internal:
+        initContainer:
+          permissions:
+            enabled: true
+        podSecurityContext:
+          fsGroup: 999
+        nodeSelector: { workload: infrastructure }
+    redis:
+      type: internal
+      internal:
+        podSecurityContext:
+          fsGroup: 999
+        nodeSelector: { workload: infrastructure }
+    trivy:
+      enabled: true
+      podSecurityContext:
+        fsGroup: 10000
+      nodeSelector: { workload: infrastructure }
+    # Harbor pins each subchart pod individually; no global nodeSelector key.
+    portal:
+      nodeSelector: { workload: infrastructure }
+    core:
+      nodeSelector: { workload: infrastructure }
+    jobservice:
+      nodeSelector: { workload: infrastructure }
+      # Job logs go to the Harbor Postgres DB, NOT on-disk files. The default
+      # `file` logger writes one /var/log/jobs/<id>.log per task onto a 1Gi PVC
+      # with only 65536 inodes; replication/scan now writes ~30k files/day, so
+      # inodes exhaust in ~2 days. Once full, the file sweeper itself can't run
+      # (can't create its own log) -> deadlock: GC/replication die instantly.
+      # `database` removes all disk-inode pressure and keeps the Harbor UI's
+      # per-task "Log" viewer working; loggerSweeperDuration then prunes DB log
+      # rows older than N days instead of files.
+      jobLoggers:
+        - database
+      loggerSweeperDuration: 2
+    registry:
+      nodeSelector: { workload: infrastructure }
+    nginx:
+      nodeSelector: { workload: infrastructure }

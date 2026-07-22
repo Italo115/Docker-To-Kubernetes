@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Cluster-wide operators and Helm sources. Order matters where one controller's
+# CRDs are referenced by another's manifests; sources/ goes first so HelmRepositories
+# exist when downstream HelmReleases reconcile.
+resources:
+  - priority-classes
+  - harbor-hosts-fix
+  - sources
+  - storage
+  - cert-manager
+  - traefik
+  - cnpg
+  - reloader
+  - reflector
+  - monitoring
+  - minio
+  - harbor
+  - nexus

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-config-prod
+  namespace: flux-system
+data:
+  environment: prod
+  cluster_domain: kube.example.com
+  app_namespace: app-prod
+  pg_cluster: postgres
+  pg_namespace: postgresql
+  image_tag_suffix: prod
+  auto_image_updates: "false"
+  workload_pool: prod

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Platform · Application Error</title>
+<link rel="stylesheet" href="/assets/error.css" />
+</head>
+<body>
+<div class="err-page" id="errPage">
+  <div class="page-bg"></div>
+
+  <header class="brandbar">
+    <img class="logo" src="/assets/logo.png" alt="Platform" />
+    <div class="platform">Platform<small>Example Platform</small></div>
+    <div class="status"><span class="chip-status" id="statusChip"><span class="dot"></span> <span id="statusChipLabel">System Error</span></span></div>
+  </header>
+
+  <main class="stage">
+    <section class="card">
+      <div class="err-code" id="errCode">
+        <svg class="contour-svg" viewBox="0 0 760 360" preserveAspectRatio="none" aria-hidden="true">
+          <g id="contourGroup">
+          <path d="M-40,70  C150,30 300,110 450,70  S700,30 820,74"  style="--len:1000;stroke-dasharray:1000"></path>
+          <path d="M-40,120 C150,80 300,160 450,120 S700,80 820,124" style="--len:1000;stroke-dasharray:1000"></path>
+          <path class="accent" d="M-40,180 C150,140 300,220 450,180 S700,140 820,184" style="--len:1000;stroke-dasharray:1000"></path>
+          <path d="M-40,240 C150,200 300,280 450,240 S700,200 820,244" style="--len:1000;stroke-dasharray:1000"></path>
+          <path d="M-40,290 C150,250 300,330 450,290 S700,250 820,294" style="--len:1000;stroke-dasharray:1000"></path>
+          </g>
+        </svg>
+        <span class="digit">_</span><span class="digit accent">_</span><span class="digit">_</span>
+        <span class="http fx fx-1" id="errHttp">__STATUS__</span>
+      </div>
+
+      <div class="err-head">
+        <h1 class="err-title fx fx-1" id="errTitle">Something went wrong on our end</h1>
+        <p class="err-body fx fx-2" id="errBody">
+          The application hit an unexpected error and could not complete your request.
+          The incident has been captured and reported to monitoring automatically.
+        </p>
+      </div>
+
+      <div class="actions fx fx-4" id="errActions">
+        <a class="btn btn-primary" id="viewLogsBtn" target="_blank" rel="noopener">
+          <i class="pi pi-list"></i> View Logs
+        </a>
+        <button class="btn btn-secondary" onclick="location.reload()">
+          <i class="pi pi-refresh"></i> Try Again
+        </button>
+      </div>
+
+      <div class="note-line fx fx-5" id="noteLine">
+        <i class="pi pi-check-circle"></i>
+        Our team has been notified · reference auto-reported to monitoring
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  // This page serves server errors (5xx). 401 and 404 have their own dedicated
+  // pages (401.html / 404.html) routed by nginx.
+  const GRAFANA_BASE = 'https://grafana.example.com';
+
+  const COPY = {
+    '500': { http: 'HTTP 500 · Internal Server Error',
+             title: 'Something went wrong on our end',
+             body: 'The application hit an unexpected error and could not complete your request. The incident has been captured and reported to monitoring automatically.' },
+    '502': { http: 'HTTP 502 · Bad Gateway',
+             title: 'An upstream service responded badly',
+             body: 'A dependency the application relies on returned an invalid response. This is usually transient — retry in a moment, or review the logs for the failing upstream.' },
+    '503': { http: 'HTTP 503 · Service Unavailable',
+             title: 'The service is temporarily unavailable',
+             body: 'The application is briefly overloaded or undergoing maintenance and cannot serve your request right now. Capacity is being restored — please try again shortly.' },
+    '504': { http: 'HTTP 504 · Gateway Timeout',
+             title: 'An upstream service timed out',
+             body: 'A dependency took too long to respond and the request was abandoned to protect the platform. Retry the request, or open the logs to see which call stalled.' },
+  };
+
+  const rawCode = (document.getElementById('errHttp').textContent || '').trim();
+  const code = /^\d{3}$/.test(rawCode) ? rawCode : '500';
+  const copy = COPY[code] || COPY['500'];
+
+  const digits = document.getElementById('errCode').querySelectorAll('.digit');
+  digits[0].textContent = code[0];
+  digits[1].textContent = code[1];
+  digits[2].textContent = code[2];
+  document.getElementById('errHttp').textContent = copy.http;
+  document.getElementById('errTitle').textContent = copy.title;
+  document.getElementById('errBody').textContent = copy.body;
+  document.getElementById('statusChipLabel').textContent = 'System Error';
+
+  const host = window.location.host;
+  const sub = host.split('.')[0];
+  const envMatch = sub.match(/-(dev|qa|uat|prod)$/);
+  const env = envMatch ? envMatch[1] : 'dev';
+  const app = envMatch ? sub.slice(0, envMatch.index) : sub;
+  const ns = `app-${env}`;
+
+  const logsBtn = document.getElementById('viewLogsBtn');
+  if (env === 'prod') {
+    logsBtn.remove();
+  } else {
+    const lokiQuery = `{namespace="${ns}",app="${app}"} |~ "(?i)error|exception"`;
+    const lokiPayload = {
+      datasource: 'loki',
+      queries: [{ refId: 'A', expr: lokiQuery }],
+      range: { from: 'now-15m', to: 'now' }
+    };
+    logsBtn.href = `${GRAFANA_BASE}/explore?orgId=1&left=${encodeURIComponent(JSON.stringify(lokiPayload))}`;
+  }
+</script>
+<script src="/assets/error-fx.js"></script>
+</body>
+</html>

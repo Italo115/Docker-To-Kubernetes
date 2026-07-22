@@ -1,0 +1,31 @@
+# One ImageUpdateAutomation for qa — scans every apps/2-qa/<domain>/<app>/values-patch.yaml
+# for $imagepolicy markers and rewrites the matched value when a newer tag matches.
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: qa
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: fluxcdbot
+        email: fluxcdbot@example.com
+      messageTemplate: |
+        chore(qa): bump image tags
+
+        {{ range .Changed.Changes }}
+        - {{ .OldValue }} -> {{ .NewValue }}
+        {{ end }}
+    push:
+      branch: main
+  update:
+    path: ./apps/2-qa
+    strategy: Setters

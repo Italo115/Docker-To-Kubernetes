@@ -1,0 +1,6 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# minio namespace is owned by secrets-infrastructure (declared there so the
+# minio-secret applies before this HelmRelease reconciles).
+resources:
+  - release.yaml

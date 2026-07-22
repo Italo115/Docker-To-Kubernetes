@@ -1,0 +1,12 @@
+apiVersion: v2
+name: platform
+description: Application template — renders one application (Deployment + Service + optional ingress + optional CNPG Database)
+type: application
+version: 0.5.12
+appVersion: "1.0.0"
+keywords:
+  - platform
+  - app-template
+maintainers:
+  - name: Platform Team
+    email: platform-admin@example.com

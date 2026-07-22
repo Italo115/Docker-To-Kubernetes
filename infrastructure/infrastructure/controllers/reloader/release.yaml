@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: reloader
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: reloader
+  namespace: flux-system
+spec:
+  targetNamespace: reloader
+  interval: 30m
+  timeout: 15m
+  chart:
+    spec:
+      chart: reloader
+      version: "2.x"
+      sourceRef:
+        kind: HelmRepository
+        name: stakater
+        namespace: flux-system
+      interval: 12h
+  install:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    reloader:
+      reloadOnCreate: true
+      # Only watch resources annotated with reloader.stakater.com/auto: "true"
+      # (set by platform Deployment template when database.enabled)
+      watchGlobally: true
+      autoReloadAll: false
+      deployment:
+        nodeSelector:
+          workload: infrastructure

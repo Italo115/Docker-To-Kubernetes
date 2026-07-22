@@ -1,0 +1,46 @@
+{{- if and .Values.ingress .Values.ingress.enabled -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "platform.fullname" . }}-tls
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "platform.fullname" . }}-tls
+  issuerRef:
+    name: {{ .Values.ingress.clusterIssuer | default "letsencrypt-prod" }}
+    kind: ClusterIssuer
+  dnsNames:
+    - {{ required "ingress.host is required when ingress.enabled" .Values.ingress.host | quote }}
+    {{- range .Values.ingress.extraHosts }}
+    - {{ . | quote }}
+    {{- end }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "platform.fullname" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    {{- toYaml (.Values.ingress.entryPoints | default (list "websecure")) | nindent 4 }}
+  routes:
+    - match: (Host(`{{ .Values.ingress.host }}`){{ range .Values.ingress.extraHosts }} || Host(`{{ . }}`){{ end }}){{ with .Values.ingress.pathPrefix }} && PathPrefix(`{{ . }}`){{ end }}
+      kind: Rule
+      services:
+        - name: {{ include "platform.fullname" . }}
+          port: {{ .Values.port }}
+          {{- with .Values.ingress.scheme }}
+          scheme: {{ . }}
+          {{- end }}
+          {{- if .Values.ingress.serversTransport }}
+          serversTransport: {{ include "platform.fullname" . }}-transport
+          {{- end }}
+      {{- with .Values.ingress.middlewares }}
+      middlewares:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  tls:
+    secretName: {{ include "platform.fullname" . }}-tls
+{{- end }}

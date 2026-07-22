@@ -1,0 +1,213 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=B612+Mono:wght@400;700&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/primeicons@7/primeicons.css');
+
+:root {
+  --color-primary-navy: #003366;
+  --color-primary-dark: #1a4775;
+  --color-orange: #f6921e;
+  --color-orange-shade: #d8801a;
+  --color-danger: #F44336;
+  --color-danger-bg: #FDECEA;
+  --color-danger-fg: #B3261E;
+  --color-success-fg: #1f8a5b;
+  --color-text-primary: #0f1d2e;
+  --color-text-tertiary: #64748b;
+  --color-text-muted: #58667a;
+  --color-bg-page: #f5f7fa;
+  --color-border: #e2e8f0;
+  --font-display: 'Montserrat', sans-serif;
+  --font-ui: 'Inter', sans-serif;
+  --font-mono: 'B612 Mono', ui-monospace, monospace;
+  --fw-book: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-full: 9999px;
+  --button-height-lg: 44px;
+}
+
+html, body { margin: 0; height: 100%; }
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: var(--font-ui);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+.err-page {
+  position: relative;
+  width: 100%; height: 100%;
+  background: var(--color-bg-page);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.err-page .page-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(0,51,102,0.06), transparent 55%),
+    radial-gradient(circle at 80% 90%, rgba(246,146,30,0.05), transparent 55%);
+  pointer-events: none;
+}
+
+.brandbar {
+  position: relative; z-index: 2;
+  flex: 0 0 auto; height: 68px;
+  display: flex; align-items: center; gap: 14px;
+  padding: 0 36px;
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(6px);
+}
+.brandbar .logo { height: 28px; width: auto; display: block; }
+.brandbar .platform {
+  font-family: var(--font-display); font-weight: var(--fw-medium);
+  font-size: 15px; color: var(--color-primary-navy); letter-spacing: 0.04em;
+  padding-left: 14px; margin-left: 2px; border-left: 1px solid var(--color-border);
+}
+.brandbar .platform small {
+  display: block; font-family: var(--font-ui); font-weight: var(--fw-book);
+  font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+.brandbar .status { margin-left: auto; }
+
+.chip-status {
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+  font-size: 12px; font-weight: var(--fw-semibold);
+  padding: 6px 13px; border-radius: var(--radius-full);
+  color: var(--color-danger-fg); background: var(--color-danger-bg);
+}
+.chip-status .dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--color-danger);
+  box-shadow: 0 0 0 0 rgba(244,67,54,0.5); animation: pulse 2s infinite;
+}
+/* Client-error variants — calmer than the pulsing red server-error chip. */
+.chip-status.is-warn { color: var(--color-orange-shade); background: rgba(246,146,30,0.13); }
+.chip-status.is-warn .dot { background: var(--color-orange); box-shadow: none; animation: none; }
+.chip-status.is-info { color: var(--color-primary-navy); background: rgba(0,51,102,0.08); }
+.chip-status.is-info .dot { background: var(--color-primary-navy); box-shadow: none; animation: none; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(244,67,54,0.45); }
+  70% { box-shadow: 0 0 0 7px rgba(244,67,54,0); }
+  100% { box-shadow: 0 0 0 0 rgba(244,67,54,0); }
+}
+
+.stage {
+  position: relative; z-index: 1;
+  flex: 1; min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px;
+}
+.card {
+  position: relative;
+  width: 100%; max-width: 600px;
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center;
+  gap: 22px;
+}
+
+.err-code {
+  position: relative;
+  font-family: var(--font-display); font-weight: var(--fw-bold);
+  font-size: 150px; line-height: 0.92; letter-spacing: -0.03em;
+  color: var(--color-primary-navy);
+  display: inline-flex; align-items: baseline;
+}
+.err-code .digit { display: inline-block; }
+.err-code .accent { color: var(--color-orange); }
+.err-code .http {
+  position: absolute; left: 50%; bottom: -22px; transform: translateX(-50%);
+  font-family: var(--font-mono); font-size: 12px; font-weight: 400;
+  letter-spacing: 0.04em; color: var(--color-text-tertiary); white-space: nowrap;
+}
+
+.contour-svg {
+  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
+  width: 940px; height: 420px; pointer-events: none; z-index: -1; overflow: visible;
+}
+.contour-svg path {
+  fill: none; stroke: var(--color-primary-navy);
+  stroke-width: 1.4; opacity: 0; stroke-linecap: round;
+}
+.contour-svg path.accent { stroke: var(--color-orange); stroke-width: 1.8; }
+
+.err-head { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 14px; }
+.err-title {
+  font-family: var(--font-display); font-weight: var(--fw-medium);
+  font-size: 30px; line-height: 1.15; letter-spacing: -0.01em;
+  color: var(--color-primary-dark); margin: 0;
+}
+.err-body {
+  font-size: 15.5px; line-height: 1.62; color: var(--color-text-muted);
+  max-width: 46ch; text-wrap: pretty; margin: 0;
+}
+
+.actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
+.btn {
+  font-family: var(--font-ui); font-weight: var(--fw-semibold); font-size: 14px;
+  height: var(--button-height-lg); padding: 0 22px;
+  border-radius: var(--radius-sm); border: 1px solid transparent; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 9px; white-space: nowrap;
+  text-decoration: none;
+  transition: background .18s, border-color .18s, color .18s, transform .05s, box-shadow .18s;
+}
+.btn:active { transform: translateY(1px); }
+.btn i { font-size: 16px; }
+.btn-primary { background: var(--color-orange); color: #fff; box-shadow: 0 6px 18px rgba(246,146,30,0.28); }
+.btn-primary:hover { background: var(--color-orange-shade); }
+.btn-secondary { background: var(--color-primary-navy); color: #fff; }
+.btn-secondary:hover { background: var(--color-primary-dark); }
+.btn-ghost {
+  background: transparent; color: var(--color-primary-navy);
+  border-color: var(--color-border);
+}
+.btn-ghost:hover { background: rgba(0,51,102,0.05); }
+
+.note-line {
+  font-size: 12.5px; color: var(--color-text-tertiary);
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.note-line i { color: var(--color-success-fg); font-size: 13px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Reveal via CSS animation (forwards) — NOT gated on a JS-applied class, so an
+     error page never renders blank if its JS fails to run. error-fx.js handles
+     only the cursor parallax now. */
+  .fx { opacity: 0; transform: translateY(8px);
+        animation: fxReveal .5s ease-in-out forwards; }
+  .fx-1 { animation-delay: .05s; }
+  .fx-2 { animation-delay: .10s; }
+  .fx-3 { animation-delay: .15s; }
+  .fx-4 { animation-delay: .20s; }
+  .fx-5 { animation-delay: .25s; }
+  @keyframes fxReveal { to { opacity: 1; transform: none; } }
+
+  .contour-svg path {
+    stroke-dashoffset: var(--len);
+    transition: stroke-dashoffset 1.3s ease-in-out, opacity .7s ease-in-out;
+  }
+  .is-in .contour-svg path { stroke-dashoffset: 0; opacity: 0.13; }
+  .is-in .contour-svg path.accent { opacity: 0.5; }
+  .is-in .contour-svg path:nth-child(2) { transition-delay: .10s; }
+  .is-in .contour-svg path:nth-child(3) { transition-delay: .20s; }
+  .is-in .contour-svg path:nth-child(4) { transition-delay: .30s; }
+  .is-in .contour-svg path:nth-child(5) { transition-delay: .40s; }
+  .is-in .contour-svg { animation: contourDrift 14s ease-in-out 1.6s infinite alternate; }
+  @keyframes contourDrift {
+    from { transform: translate(-50%, -50%); }
+    to   { transform: translate(-50%, calc(-50% - 9px)); }
+  }
+}
+
+@media (max-width: 560px) {
+  .err-code { font-size: 110px; }
+  .err-title { font-size: 24px; }
+  .brandbar { padding: 0 18px; }
+  .stage { padding: 24px; }
+  .contour-svg { width: 100vw; height: 320px; }
+}

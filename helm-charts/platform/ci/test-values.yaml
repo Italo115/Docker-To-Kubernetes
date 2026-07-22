@@ -1,0 +1,9 @@
+# Minimal valid scenario: stateless frontend, no DB, no ingress.
+# Exercises Deployment + Service rendering with the smallest possible input.
+component: ci-frontend
+domain: it
+
+image:
+  repository: example/frontend
+  tag: latest
+port: 8080

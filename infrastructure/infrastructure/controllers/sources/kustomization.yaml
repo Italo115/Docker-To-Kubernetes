@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  # Certs
+  - jetstack.yaml
+  # Routing
+  - traefik.yaml
+  # Observability
+  - grafana.yaml
+  - prometheus-community.yaml
+  - opentelemetry.yaml
+  # Artifactory
+  - harbor.yaml
+  - sonatype.yaml
+  # Databases
+  - cnpg.yaml
+  # Blob-storage
+  - minio.yaml
+  # Reloader (rolls pods on secret/configmap change)
+  - stakater.yaml
+  # Reflector (mirrors Secrets across namespaces — used for CNPG superuser)
+  - emberstack.yaml
+  # Applications
+  - example.yaml

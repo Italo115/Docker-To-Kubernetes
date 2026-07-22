@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: flux-system
+nameSuffix: -dev
+configurations:
+  - ../../../kustomizeconfig.yaml
+resources:
+  - ../../../0-base/department/application-name
+configMapGenerator:
+  - name: sample-app-values-env
+    files:
+      - values.yaml=values-patch.yaml
+generatorOptions:
+  disableNameSuffixHash: true

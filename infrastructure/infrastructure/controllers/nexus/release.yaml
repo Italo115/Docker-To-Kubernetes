@@ -1,0 +1,52 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: nexus-repository-manager
+  namespace: flux-system
+spec:
+  targetNamespace: nexus
+  interval: 30m
+  dependsOn:
+    - name: traefik
+    - name: cert-manager
+  chart:
+    spec:
+      chart: nexus-repository-manager
+      version: "64.x"
+      sourceRef:
+        kind: HelmRepository
+        name: sonatype
+        namespace: flux-system
+      interval: 12h
+  timeout: 15m
+  install:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    nexus:
+      docker:
+        enabled: false
+      env:
+        - name: INSTALL4J_ADD_VM_PARAMS
+          value: "-Xms1200m -Xmx1200m -XX:MaxDirectMemorySize=2g"
+    persistence:
+      enabled: true
+      accessMode: ReadWriteOnce
+      size: 100Gi
+    nodeSelector:
+      workload: infrastructure
+    ingress:
+      enabled: true
+      ingressClassName: traefik-traefik
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+      hostRepo: nexus.kube.example.com
+      tls:
+        - secretName: nexus-tls
+          hosts:
+            - nexus.kube.example.com
